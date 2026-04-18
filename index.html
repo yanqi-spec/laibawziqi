@@ -2,78 +2,152 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>五子棋 · 联网对战版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>五子棋 · 奇幻对战版</title>
     <style>
-        * { user-select: none; -webkit-tap-highlight-color: transparent; }
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+
         body {
-            background: linear-gradient(145deg, #2a5f3a 0%, #1e3e2c 100%);
+            background: linear-gradient(145deg, #1a4d2a 0%, #0e2a1a 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, system-ui, -apple-system, sans-serif;
             margin: 0;
-            padding: 20px;
-        }
-        .game-container {
-            background: #d4af6a;
-            border-radius: 48px;
-            padding: 20px 25px 25px 25px;
-        }
-        .board-wrapper {
-            background: #e9c891;
-            border-radius: 16px;
             padding: 12px;
         }
+
+        /* 手机端容器自适应 */
+        .game-container {
+            background: #d4af6a;
+            background-image: radial-gradient(circle at 25% 40%, rgba(255,245,200,0.2) 2%, transparent 2.5%);
+            background-size: 40px 40px;
+            border-radius: 48px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5), inset 0 1px 4px rgba(255,255,200,0.8);
+            padding: 15px 18px 22px 18px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .board-wrapper {
+            background: #e9c891;
+            border-radius: 20px;
+            padding: 10px;
+            box-shadow: inset 0 0 0 2px #f9eec1, 0 8px 18px rgba(0,0,0,0.3);
+        }
+
         canvas {
             display: block;
             margin: 0 auto;
             cursor: pointer;
             background-color: #f7efcf;
+            border-radius: 12px;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
+
+        /* 信息面板 手机优化 */
         .info-panel {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            margin-top: 20px;
-            gap: 20px;
-            background: #2e241e;
+            margin-top: 18px;
+            gap: 12px;
+            background: #2e241ecc;
+            backdrop-filter: blur(4px);
             border-radius: 60px;
-            padding: 8px 20px;
+            padding: 8px 16px;
         }
+
         .turn-indicator {
             background: #1f1912;
             border-radius: 40px;
-            padding: 8px 18px;
+            padding: 6px 14px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
-        .piece-sample { width: 32px; height: 32px; border-radius: 50%; }
+
+        .piece-sample {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+        }
         .piece-black { background: radial-gradient(circle at 35% 35%, #555, #1e1e1e); }
         .piece-white { background: radial-gradient(circle at 35% 35%, #f9f9fc, #e1e5ec); }
+
         .turn-text {
-            font-size: 1.4rem;
+            font-size: 1rem;
             font-weight: bold;
             color: #f7e9b0;
+            white-space: nowrap;
         }
+
         .reset-btn {
             background: #ffcd7e;
             border: none;
-            font-size: 1.2rem;
+            font-size: 0.9rem;
             font-weight: bold;
-            padding: 8px 24px;
+            padding: 6px 18px;
             border-radius: 40px;
             cursor: pointer;
             color: #2c1c0c;
+            transition: 0.1s;
+            box-shadow: 0 3px 0 #a05e1a;
+            transform: translateY(-1px);
         }
+        .reset-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #a05e1a; }
+
         .winner-message {
-            font-size: 1rem;
+            font-size: 0.8rem;
             background: #000000aa;
-            padding: 6px 16px;
+            padding: 5px 12px;
             border-radius: 40px;
             color: #ffeaac;
+        }
+
+        /* 趣味功能栏 横向滚动 / 网格 */
+        .fun-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .fun-btn {
+            background: #3a2a1c;
+            border: none;
+            color: #ffecb3;
+            font-size: 0.75rem;
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s;
+            box-shadow: 0 1px 3px black;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .fun-btn:active { transform: scale(0.96); background: #5e3e1e; }
+        .cheat-trigger {
+            background: #2c2c2c;
+            color: #aaa;
+            font-size: 0.7rem;
+        }
+
+        @media (max-width: 550px) {
+            .fun-btn { font-size: 0.7rem; padding: 4px 10px; }
+            .turn-text { font-size: 0.85rem; }
+            .info-panel { gap: 8px; }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -87,211 +161,172 @@
         <div class="info-panel">
             <div class="turn-indicator" id="turnIndicator">
                 <div class="piece-sample piece-black" id="turnPieceIcon"></div>
-                <div class="turn-text" id="turnText">连接房间中...</div>
+                <div class="turn-text" id="turnText">连接中</div>
             </div>
-            <button class="reset-btn" id="resetBtn">⇄ 新的一局</button>
+            <button class="reset-btn" id="resetBtn">🔄 新一局</button>
             <div class="winner-message" id="winnerMsg"></div>
+        </div>
+        
+        <!-- 10个趣味功能按钮 + 隐藏开挂彩蛋入口(长按) -->
+        <div class="fun-bar" id="funBar">
+            <button class="fun-btn" id="shakeBtn">🌀 震屏乱舞</button>
+            <button class="fun-btn" id="rainbowBtn">🌈 彩虹棋盘</button>
+            <button class="fun-btn" id="ghostBtn">👻 幽灵棋子</button>
+            <button class="fun-btn" id="bigHeadBtn">🐼 大头特效</button>
+            <button class="fun-btn" id="timeLimitBtn">⏱️ 5秒快棋</button>
+            <button class="fun-btn" id="reverseBtn">🔄 镜像翻转</button>
+            <button class="fun-btn" id="confettiBtn">🎉 烟花庆祝</button>
+            <button class="fun-btn" id="darkBtn">🌙 暗夜模式</button>
+            <button class="fun-btn" id="echoBtn">🗣️ 语音播报</button>
+            <button class="fun-btn" id="emojiBtn">😎 颜文字轰炸</button>
+        </div>
+        <!-- 隐藏开挂按钮(长按此处5秒激活) -->
+        <div style="text-align: center; margin-top: 8px;">
+            <button class="fun-btn cheat-trigger" id="cheatSecretBtn" style="opacity:0.5;">⚡ 神秘区域</button>
         </div>
     </div>
 </div>
 
 <script>
-    (function() {
+    (function(){
+        // ---------- Supabase 配置 ----------
         const SUPABASE_URL = 'https://ekpjimjgcujpmyldxqrj.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcGppbWpnY3VqcG15bGR4cXJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0OTExNDYsImV4cCI6MjA5MjA2NzE0Nn0.7AF5yOB5f9RRCF8pIWOwgUQWxXhDFe9u8VfSz0pV2_I';
-
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+        
+        // 游戏核心
         const boardSize = 15;
         let board = [];
-        let currentPlayer = 1;
+        let currentPlayer = 1;   // 1黑 2白
         let gameOver = false;
         let roomId = null;
         let myColor = null;
-
+        
+        // 趣味开关
+        let rainbowMode = false;
+        let ghostMode = false;
+        let bigHeadMode = false;
+        let reverseMode = false;
+        let darkMode = false;
+        let timeLimitActive = false;
+        let timeLimitTimer = null;
+        let voiceEnabled = false;
+        let shakeEnabled = false;
+        
+        // 隐藏开挂变量
+        let cheatActive = false;      // 开挂模式: 可以强制落子任意位置(无视回合)
+        let cheatCooldown = false;
+        
+        // DOM
         const canvas = document.getElementById('gobangCanvas');
         const ctx = canvas.getContext('2d');
         const turnTextEl = document.getElementById('turnText');
         const turnPieceIcon = document.getElementById('turnPieceIcon');
         const winnerMsgEl = document.getElementById('winnerMsg');
         const resetBtn = document.getElementById('resetBtn');
-
+        
         let cellSize = 0, offsetX = 0, offsetY = 0, radius = 0;
-
-        async function joinRoom() {
-            let inputRoom = prompt("请输入房间号（例如 123）:", "123");
-            if (!inputRoom) return;
-            roomId = inputRoom;
-
-            try {
-                let { data: game, error } = await supabaseClient
-                    .from('games')
-                    .select('*')
-                    .eq('id', roomId)
-                    .maybeSingle();
-
-                if (error) {
-                    alert("连接失败: " + error.message);
-                    turnTextEl.innerText = "连接失败";
-                    return;
-                }
-
-                if (!game) {
-                    myColor = 1;
-                    const emptyBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
-                    const { error: insertError } = await supabaseClient
-                        .from('games')
-                        .insert([{
-                            id: roomId,
-                            board_data: emptyBoard,
-                            current_player: 1,
-                            winner: null,
-                            status: 'playing'
-                        }]);
-                    if (insertError) {
-                        alert("创建房间失败: " + insertError.message);
-                        return;
-                    }
-                    initLocalBoard(emptyBoard);
-                    currentPlayer = 1;
-                    gameOver = false;
-                    alert(`房间 ${roomId} 创建成功！你是黑棋，请先走。`);
-                } else {
-                    myColor = 2;
-                    initLocalBoard(game.board_data);
-                    currentPlayer = game.current_player;
-                    gameOver = (game.winner !== null);
-                    if (gameOver) {
-                        winnerMsgEl.innerText = `${game.winner === 'black' ? '黑棋' : '白棋'} 已获胜`;
-                    }
-                    alert(`加入房间 ${roomId} 成功！你是白棋，等待对手落子。`);
-                }
-
-                updateTurnDisplay();
-                drawBoard();
-                listenToGameChanges();
-            } catch (err) {
-                alert("发生错误: " + err.message);
-            }
-        }
-
+        
+        // ---------- 辅助函数 ----------
         function initLocalBoard(data) {
-            if (data && data.length === boardSize) {
-                board = data;
+            if (data && data.length === boardSize) board = data;
+            else board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
+        }
+        
+        // 语音播报
+        function speak(msg) {
+            if (!voiceEnabled) return;
+            const utterance = new SpeechSynthesisUtterance(msg);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.9;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        // 震动(手机)
+        function vibrate(duration = 30) {
+            if (navigator.vibrate) navigator.vibrate(duration);
+        }
+        
+        // 烟花简单模拟 (canvas小特效)
+        function fireConfetti() {
+            if (!window.confetti) {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1';
+                script.onload = () => canvasConfetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                document.body.appendChild(script);
             } else {
-                board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
+                canvasConfetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             }
         }
-
-        function listenToGameChanges() {
-            supabaseClient
-                .channel(`game:${roomId}`)
-                .on('postgres_changes', {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'games',
-                    filter: `id=eq.${roomId}`
-                }, (payload) => {
-                    const newGame = payload.new;
-                    initLocalBoard(newGame.board_data);
-                    currentPlayer = newGame.current_player;
-                    gameOver = (newGame.winner !== null);
-                    winnerMsgEl.innerText = gameOver ? `${newGame.winner === 'black' ? '黑棋' : '白棋'} 获胜！` : '';
-                    updateTurnDisplay();
-                    drawBoard();
-                })
-                .subscribe();
+        
+        // 颜文字轰炸
+        function emojiBlast() {
+            const emojis = ['😎', '🤯', '🔥', '⚡', '🎉', '🐉', '🍜', '✨', '💀', '👑'];
+            for(let i=0;i<8;i++) {
+                const emoji = document.createElement('div');
+                emoji.innerText = emojis[Math.floor(Math.random()*emojis.length)];
+                emoji.style.position = 'fixed';
+                emoji.style.left = Math.random() * window.innerWidth + 'px';
+                emoji.style.top = Math.random() * window.innerHeight + 'px';
+                emoji.style.fontSize = (20 + Math.random()*30) + 'px';
+                emoji.style.pointerEvents = 'none';
+                emoji.style.zIndex = 9999;
+                emoji.style.transition = 'transform 1s ease, opacity 1s';
+                emoji.style.opacity = '1';
+                document.body.appendChild(emoji);
+                setTimeout(() => { emoji.style.transform = 'translateY(-100px)'; emoji.style.opacity = '0'; }, 50);
+                setTimeout(() => emoji.remove(), 1000);
+            }
         }
-
-        async function placePiece(row, col) {
-            if (gameOver) {
-                alert("游戏已经结束");
-                return false;
-            }
-            if (board[row][col] !== 0) {
-                alert("这里已经有棋子了");
-                return false;
-            }
-            if (currentPlayer !== myColor) {
-                alert("请等待对手落子");
-                return false;
-            }
-
-            board[row][col] = myColor;
-
-            let win = checkWin(row, col, myColor);
-            let winnerVal = null;
-            if (win) {
-                gameOver = true;
-                winnerVal = (myColor === 1) ? 'black' : 'white';
-                winnerMsgEl.innerText = `${winnerVal === 'black' ? '黑棋' : '白棋'} 获胜！`;
+        
+        // 绘制增强 (彩虹/幽灵/大头/反转等)
+        function drawCustomPiece(x, y, val, isGhost = false) {
+            let grad;
+            if (rainbowMode && !isGhost) {
+                const hue = (Date.now() * 0.005 + (x+y)*20) % 360;
+                grad = ctx.createRadialGradient(x-3, y-3, 3, x, y, radius);
+                grad.addColorStop(0, `hsl(${hue}, 100%, 65%)`);
+                grad.addColorStop(1, `hsl(${hue+40}, 80%, 45%)`);
+                ctx.fillStyle = grad;
+            } else if (val === 1) {
+                grad = ctx.createRadialGradient(x-3, y-3, 3, x, y, radius);
+                grad.addColorStop(0, '#3a3a3a');
+                grad.addColorStop(1, '#111');
+                ctx.fillStyle = grad;
             } else {
-                currentPlayer = (currentPlayer === 1) ? 2 : 1;
+                grad = ctx.createRadialGradient(x-3, y-3, 3, x, y, radius);
+                grad.addColorStop(0, '#fefefe');
+                grad.addColorStop(1, '#cbd5e1');
+                ctx.fillStyle = grad;
             }
-
-            updateTurnDisplay();
-            drawBoard();
-
-            const { error } = await supabaseClient
-                .from('games')
-                .update({
-                    board_data: board,
-                    current_player: currentPlayer,
-                    winner: winnerVal
-                })
-                .eq('id', roomId);
-
-            if (error) {
-                alert("同步失败，请重试");
-                return false;
+            if (ghostMode && !isGhost) {
+                ctx.globalAlpha = 0.65;
+            } else ctx.globalAlpha = 1;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 大头特效: 增大高光
+            if (bigHeadMode && !isGhost) {
+                ctx.beginPath();
+                ctx.arc(x-2, y-2, radius*0.4, 0, 2*Math.PI);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x+1, y+1, radius*0.15, 0, 2*Math.PI);
+                ctx.fillStyle = 'black';
+                ctx.fill();
+            } else {
+                ctx.beginPath();
+                ctx.arc(x-2, y-2, radius*0.22, 0, 2*Math.PI);
+                ctx.fillStyle = val===1? 'rgba(220,220,240,0.5)':'rgba(255,255,255,0.9)';
+                ctx.fill();
             }
-            return true;
+            ctx.globalAlpha = 1;
         }
-
-        function checkWin(row, col, playerVal) {
-            const dirs = [[1,0],[0,1],[1,1],[1,-1]];
-            for(let [dx, dy] of dirs) {
-                let count = 1;
-                for(let step = 1; step <= 4; step++) {
-                    const nr = row + dx * step, nc = col + dy * step;
-                    if(nr < 0 || nr >= boardSize || nc < 0 || nc >= boardSize) break;
-                    if(board[nr][nc] === playerVal) count++;
-                    else break;
-                }
-                for(let step = 1; step <= 4; step++) {
-                    const nr = row - dx * step, nc = col - dy * step;
-                    if(nr < 0 || nr >= boardSize || nc < 0 || nc >= boardSize) break;
-                    if(board[nr][nc] === playerVal) count++;
-                    else break;
-                }
-                if(count >= 5) return true;
-            }
-            return false;
-        }
-
-        async function resetGame() {
-            if (!roomId) {
-                joinRoom();
-                return;
-            }
-            const emptyBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
-            board = emptyBoard;
-            currentPlayer = 1;
-            gameOver = false;
-            winnerMsgEl.innerText = '';
-            updateTurnDisplay();
-            drawBoard();
-            await supabaseClient
-                .from('games')
-                .update({
-                    board_data: emptyBoard,
-                    current_player: 1,
-                    winner: null
-                })
-                .eq('id', roomId);
-            alert("棋盘已重置");
-        }
-
+        
         function drawBoard() {
             if (!ctx) return;
             const w = canvas.width, h = canvas.height;
@@ -300,12 +335,13 @@
             offsetX = padding;
             offsetY = padding;
             radius = Math.min(cellSize * 0.42, 16);
-
-            ctx.fillStyle = '#f7efcf';
+            
+            // 暗夜模式背景
+            ctx.fillStyle = darkMode ? '#1a2a1f' : '#f7efcf';
             ctx.fillRect(0, 0, w, h);
-
+            
             ctx.beginPath();
-            ctx.strokeStyle = '#4b3a2b';
+            ctx.strokeStyle = darkMode ? '#bbaa88' : '#4b3a2b';
             ctx.lineWidth = 1.8;
             for(let i = 0; i < boardSize; i++) {
                 ctx.beginPath();
@@ -317,112 +353,257 @@
                 ctx.lineTo(offsetX + i * cellSize, offsetY + (boardSize-1) * cellSize);
                 ctx.stroke();
             }
-
+            
             const starPoints = [[3,3],[11,3],[7,7],[3,11],[11,11]];
             for(let [x,y] of starPoints) {
                 const cx = offsetX + x * cellSize;
                 const cy = offsetY + y * cellSize;
                 ctx.beginPath();
-                ctx.arc(cx, cy, cellSize*0.12, 0, 2*Math.PI);
-                ctx.fillStyle = '#b45f2b';
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(cx, cy, cellSize*0.07, 0, 2*Math.PI);
-                ctx.fillStyle = '#e9bc7d';
+                ctx.arc(cx, cy, cellSize*0.1, 0, 2*Math.PI);
+                ctx.fillStyle = darkMode ? '#e9c891' : '#b45f2b';
                 ctx.fill();
             }
-
+            
+            // 绘制棋子 (支持镜像)
             for(let i = 0; i < boardSize; i++) {
                 for(let j = 0; j < boardSize; j++) {
-                    const val = board[i][j];
+                    let val = board[i][j];
                     if(val === 0) continue;
-                    const cx = offsetX + j * cellSize;
-                    const cy = offsetY + i * cellSize;
-                    ctx.shadowColor = "rgba(0,0,0,0.4)";
-                    ctx.shadowBlur = 3;
-                    const grad = ctx.createRadialGradient(cx-3, cy-3, 3, cx, cy, radius);
-                    if(val === 1) {
-                        grad.addColorStop(0, '#2b2b2b');
-                        grad.addColorStop(0.7, '#111111');
-                        ctx.fillStyle = grad;
-                    } else {
-                        grad.addColorStop(0, '#fefefe');
-                        grad.addColorStop(0.6, '#e8eef5');
-                        ctx.fillStyle = grad;
+                    let drawX = offsetX + j * cellSize;
+                    let drawY = offsetY + i * cellSize;
+                    if (reverseMode) {
+                        drawX = offsetX + (boardSize-1 - j) * cellSize;
+                        drawY = offsetY + (boardSize-1 - i) * cellSize;
                     }
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, radius, 0, Math.PI*2);
-                    ctx.fill();
+                    ctx.shadowColor = "rgba(0,0,0,0.3)";
+                    ctx.shadowBlur = 2;
+                    drawCustomPiece(drawX, drawY, val);
                     ctx.shadowBlur = 0;
-                    ctx.beginPath();
-                    ctx.arc(cx-2, cy-2, radius*0.22, 0, 2*Math.PI);
-                    ctx.fillStyle = val === 1 ? 'rgba(180,180,200,0.3)' : 'rgba(255,255,255,0.85)';
-                    ctx.fill();
-                    ctx.shadowColor = "transparent";
                 }
             }
         }
-
+        
+        // 胜利检查
+        function checkWin(row, col, playerVal) {
+            const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+            for(let [dx, dy] of dirs) {
+                let count = 1;
+                for(let step=1;step<=4;step++) {
+                    const nr = row+dx*step, nc = col+dy*step;
+                    if(nr<0||nr>=boardSize||nc<0||nc>=boardSize) break;
+                    if(board[nr][nc]===playerVal) count++;
+                    else break;
+                }
+                for(let step=1;step<=4;step++) {
+                    const nr = row-dx*step, nc = col-dy*step;
+                    if(nr<0||nr>=boardSize||nc<0||nc>=boardSize) break;
+                    if(board[nr][nc]===playerVal) count++;
+                    else break;
+                }
+                if(count>=5) return true;
+            }
+            return false;
+        }
+        
+        // 落子同步
+        async function placePiece(row, col, isCheatSkip = false) {
+            if (gameOver && !isCheatSkip) { alert("游戏已结束"); return false; }
+            if (board[row][col] !== 0) { if(!isCheatSkip) alert("已有棋子"); return false; }
+            if (!isCheatSkip && currentPlayer !== myColor && !cheatActive) { alert("等待对手落子"); return false; }
+            
+            let finalColor = myColor;
+            if (cheatActive && isCheatSkip) finalColor = currentPlayer;   // 开挂时强制下当前回合方
+            else if (cheatActive && !isCheatSkip && currentPlayer !== myColor) finalColor = currentPlayer;
+            
+            board[row][col] = finalColor;
+            let win = checkWin(row, col, finalColor);
+            let winnerVal = null;
+            if (win) {
+                gameOver = true;
+                winnerVal = (finalColor === 1) ? 'black' : 'white';
+                winnerMsgEl.innerText = `${winnerVal === 'black' ? '黑棋' : '白棋'} 胜利！🎉`;
+                speak(winnerVal === 'black' ? '黑方胜利' : '白方胜利');
+                if (confetti) fireConfetti();
+            } else {
+                currentPlayer = (currentPlayer === 1) ? 2 : 1;
+            }
+            updateTurnDisplay();
+            drawBoard();
+            if (shakeEnabled) vibrate(20);
+            
+            const { error } = await supabaseClient
+                .from('games')
+                .update({ board_data: board, current_player: currentPlayer, winner: winnerVal })
+                .eq('id', roomId);
+            if (error) console.error("同步错误", error);
+            return true;
+        }
+        
+        // 快棋倒计时
+        function resetTimeLimit() {
+            if (timeLimitTimer) clearInterval(timeLimitTimer);
+            if (!timeLimitActive || gameOver) return;
+            if (currentPlayer === myColor) {
+                let timeLeft = 5;
+                turnTextEl.innerText = `⏰ ${timeLeft}秒内落子`;
+                timeLimitTimer = setInterval(() => {
+                    if (gameOver || currentPlayer !== myColor) { clearInterval(timeLimitTimer); return; }
+                    timeLeft--;
+                    turnTextEl.innerText = `⏰ ${timeLeft}秒内落子`;
+                    if (timeLeft <= 0) {
+                        clearInterval(timeLimitTimer);
+                        alert("超时！自动切换对手");
+                        currentPlayer = (currentPlayer === 1) ? 2 : 1;
+                        updateTurnDisplay();
+                        supabaseClient.from('games').update({ board_data: board, current_player: currentPlayer }).eq('id', roomId).then();
+                        resetTimeLimit();
+                    }
+                }, 1000);
+            } else {
+                turnTextEl.innerText = "等待对手(快棋)";
+            }
+        }
+        
+        // 监听实时
+        function listenToGameChanges() {
+            supabaseClient
+                .channel(`game:${roomId}`)
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${roomId}` }, (payload) => {
+                    const newGame = payload.new;
+                    initLocalBoard(newGame.board_data);
+                    currentPlayer = newGame.current_player;
+                    gameOver = (newGame.winner !== null);
+                    if (gameOver) winnerMsgEl.innerText = `${newGame.winner === 'black' ? '黑棋' : '白棋'} 获胜！`;
+                    else winnerMsgEl.innerText = '';
+                    updateTurnDisplay();
+                    drawBoard();
+                    if (timeLimitActive) resetTimeLimit();
+                })
+                .subscribe();
+        }
+        
+        async function joinRoom() {
+            let inputRoom = prompt("房间号(数字/字母):", "123");
+            if (!inputRoom) return;
+            roomId = inputRoom;
+            let { data: game, error } = await supabaseClient.from('games').select('*').eq('id', roomId).maybeSingle();
+            if (error) { alert("连接错误"); return; }
+            if (!game) {
+                myColor = 1;
+                const emptyBoard = Array(boardSize).fill().map(()=>Array(boardSize).fill(0));
+                await supabaseClient.from('games').insert([{ id: roomId, board_data: emptyBoard, current_player: 1, winner: null, status: 'playing' }]);
+                initLocalBoard(emptyBoard);
+                currentPlayer = 1;
+                alert(`房间 ${roomId} 创建成功！你是黑棋`);
+            } else {
+                myColor = 2;
+                initLocalBoard(game.board_data);
+                currentPlayer = game.current_player;
+                if(game.winner) winnerMsgEl.innerText = `${game.winner} 已获胜`;
+                alert(`加入房间 ${roomId}！你是白棋`);
+            }
+            updateTurnDisplay();
+            drawBoard();
+            listenToGameChanges();
+            if (timeLimitActive && myColor===currentPlayer) resetTimeLimit();
+        }
+        
+        function updateTurnDisplay() {
+            if(gameOver) return;
+            if(myColor === null) turnTextEl.innerText = "连接中";
+            else if(currentPlayer === myColor) {
+                turnTextEl.innerText = (myColor===1)?'⚫ 你的回合(黑)':'⚪ 你的回合(白)';
+                turnPieceIcon.className = `piece-sample ${myColor===1?'piece-black':'piece-white'}`;
+            } else {
+                turnTextEl.innerText = '⏳ 等待对手...';
+            }
+        }
+        
+        async function resetGame() {
+            if(!roomId) return joinRoom();
+            const emptyBoard = Array(boardSize).fill().map(()=>Array(boardSize).fill(0));
+            board = emptyBoard;
+            currentPlayer = 1;
+            gameOver = false;
+            winnerMsgEl.innerText = '';
+            updateTurnDisplay();
+            drawBoard();
+            await supabaseClient.from('games').update({ board_data: emptyBoard, current_player: 1, winner: null }).eq('id', roomId);
+            if (timeLimitActive) resetTimeLimit();
+            alert("新对局开始");
+        }
+        
+        // 坐标转换 (手机适配)
         function getBoardIndexFromPixels(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
-            const canvasX = (clientX - rect.left) * scaleX;
-            const canvasY = (clientY - rect.top) * scaleY;
-            if(canvasX < offsetX - radius || canvasX > offsetX + (boardSize-1)*cellSize + radius ||
-               canvasY < offsetY - radius || canvasY > offsetY + (boardSize-1)*cellSize + radius) {
-                return null;
+            let canvasX = (clientX - rect.left) * scaleX;
+            let canvasY = (clientY - rect.top) * scaleY;
+            if(reverseMode){
+                canvasX = canvas.width - canvasX;
+                canvasY = canvas.height - canvasY;
             }
-            let minDist = cellSize * 0.4;
-            let targetRow = -1, targetCol = -1;
-            for(let i = 0; i < boardSize; i++) {
-                for(let j = 0; j < boardSize; j++) {
-                    const cx = offsetX + j * cellSize;
-                    const cy = offsetY + i * cellSize;
-                    const dist = Math.hypot(canvasX - cx, canvasY - cy);
-                    if(dist < minDist) {
-                        minDist = dist;
-                        targetRow = i;
-                        targetCol = j;
-                    }
+            if(canvasX < offsetX - radius || canvasX > offsetX + (boardSize-1)*cellSize + radius) return null;
+            let minDist = cellSize*0.4, targetRow=-1,targetCol=-1;
+            for(let i=0;i<boardSize;i++){
+                for(let j=0;j<boardSize;j++){
+                    const cx = offsetX + j*cellSize, cy = offsetY + i*cellSize;
+                    const dist = Math.hypot(canvasX-cx, canvasY-cy);
+                    if(dist<minDist){ minDist=dist; targetRow=i; targetCol=j; }
                 }
             }
-            if(targetRow !== -1 && targetCol !== -1 && minDist <= cellSize * 0.45) {
-                return { row: targetRow, col: targetCol };
-            }
+            if(targetRow!==-1 && minDist<=cellSize*0.45) return { row:targetRow, col:targetCol };
             return null;
         }
-
+        
         function onCanvasClick(e) {
             if(gameOver) return;
             const pos = getBoardIndexFromPixels(e.clientX, e.clientY);
-            if(pos) placePiece(pos.row, pos.col);
+            if(pos) placePiece(pos.row, pos.col, false);
         }
-
         function onCanvasTouch(e) {
             e.preventDefault();
             if(gameOver) return;
             const touch = e.touches[0];
             if(touch) {
                 const pos = getBoardIndexFromPixels(touch.clientX, touch.clientY);
-                if(pos) placePiece(pos.row, pos.col);
+                if(pos) placePiece(pos.row, pos.col, false);
             }
         }
-
-        function updateTurnDisplay() {
-            if (gameOver) return;
-            if (myColor === null) {
-                turnTextEl.innerText = "连接中...";
-                return;
+        
+        // ----- 趣味功能绑定 -----
+        document.getElementById('shakeBtn').addEventListener('click',()=>{ shakeEnabled=true; vibrate(100); alert("震动模式开启"); });
+        document.getElementById('rainbowBtn').addEventListener('click',()=>{ rainbowMode=!rainbowMode; drawBoard(); });
+        document.getElementById('ghostBtn').addEventListener('click',()=>{ ghostMode=!ghostMode; drawBoard(); });
+        document.getElementById('bigHeadBtn').addEventListener('click',()=>{ bigHeadMode=!bigHeadMode; drawBoard(); });
+        document.getElementById('reverseBtn').addEventListener('click',()=>{ reverseMode=!reverseMode; drawBoard(); });
+        document.getElementById('confettiBtn').addEventListener('click',()=> fireConfetti());
+        document.getElementById('darkBtn').addEventListener('click',()=>{ darkMode=!darkMode; drawBoard(); });
+        document.getElementById('echoBtn').addEventListener('click',()=>{ voiceEnabled=!voiceEnabled; alert(voiceEnabled?"语音开启":"语音关闭"); });
+        document.getElementById('emojiBtn').addEventListener('click',()=> emojiBlast());
+        document.getElementById('timeLimitBtn').addEventListener('click',()=>{ timeLimitActive=!timeLimitActive; if(timeLimitActive) resetTimeLimit(); else { if(timeLimitTimer) clearInterval(timeLimitTimer); turnTextEl.innerText=myColor===1?"你的回合":"等待"; } alert(timeLimitActive?"快棋模式(5秒)":"快棋关闭"); });
+        
+        // 隐藏开挂功能: 长按神秘区域5秒开启
+        let cheatPressTimer;
+        const cheatBtn = document.getElementById('cheatSecretBtn');
+        cheatBtn.addEventListener('mousedown',()=>{ cheatPressTimer = setTimeout(()=>{ cheatActive=!cheatActive; alert(cheatActive?"✨ 开挂模式已激活 ✨\n无视回合，任意点击落子！":"开挂模式关闭"); cheatPressTimer=null; },2000); });
+        cheatBtn.addEventListener('mouseup',()=>{ if(cheatPressTimer) clearTimeout(cheatPressTimer); });
+        cheatBtn.addEventListener('touchstart',(e)=>{ e.preventDefault(); cheatPressTimer = setTimeout(()=>{ cheatActive=!cheatActive; alert(cheatActive?"✨ 神仙开挂 ✨\n可随意下子，强制胜利！":"关闭外挂"); cheatPressTimer=null; },2000); });
+        cheatBtn.addEventListener('touchend',()=>{ if(cheatPressTimer) clearTimeout(cheatPressTimer); });
+        
+        // 全局作弊点击: 开挂模式直接调用placeCheat
+        const originalPlace = placePiece;
+        window.placePiece = placePiece;
+        canvas.addEventListener('click', (e)=>{
+            if(!cheatActive || gameOver) return;
+            const pos = getBoardIndexFromPixels(e.clientX, e.clientY);
+            if(pos && board[pos.row][pos.col]===0){
+                placePiece(pos.row, pos.col, true);
+                e.stopPropagation();
             }
-            if (currentPlayer === myColor) {
-                turnTextEl.innerText = (myColor === 1) ? '你的回合 (黑棋)' : '你的回合 (白棋)';
-                turnPieceIcon.className = `piece-sample ${myColor === 1 ? 'piece-black' : 'piece-white'}`;
-            } else {
-                turnTextEl.innerText = '等待对手落子...';
-            }
-        }
-
+        }, true);
+        
         canvas.addEventListener('click', onCanvasClick);
         canvas.addEventListener('touchstart', onCanvasTouch, { passive: false });
         resetBtn.addEventListener('click', resetGame);
