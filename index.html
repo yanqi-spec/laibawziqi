@@ -5,61 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>五子棋 · 联网对战版</title>
     <style>
-        * {
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        * { user-select: none; -webkit-tap-highlight-color: transparent; }
         body {
             background: linear-gradient(145deg, #2a5f3a 0%, #1e3e2c 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Segoe UI', 'Roboto', 'Noto Sans', system-ui, -apple-system, 'Microsoft YaHei', sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             margin: 0;
             padding: 20px;
         }
-
         .game-container {
             background: #d4af6a;
-            background-image: radial-gradient(circle at 25% 40%, rgba(255,245,200,0.2) 2%, transparent 2.5%),
-                              radial-gradient(circle at 70% 85%, rgba(210,170,80,0.15) 1.8%, transparent 2%);
-            background-size: 40px 40px, 35px 35px;
             border-radius: 48px;
-            box-shadow: 0 25px 40px rgba(0,0,0,0.5), inset 0 1px 4px rgba(255,255,200,0.8);
             padding: 20px 25px 25px 25px;
         }
-
         .board-wrapper {
             background: #e9c891;
             border-radius: 16px;
             padding: 12px;
-            box-shadow: inset 0 0 0 2px #f9eec1, 0 8px 18px rgba(0,0,0,0.3);
         }
-
         canvas {
             display: block;
             margin: 0 auto;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            border-radius: 8px;
             cursor: pointer;
             background-color: #f7efcf;
         }
-
         .info-panel {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-top: 20px;
             gap: 20px;
-            flex-wrap: wrap;
             background: #2e241e;
             border-radius: 60px;
             padding: 8px 20px;
-            box-shadow: inset 0 1px 2px #b6945a, 0 5px 10px rgba(0,0,0,0.3);
         }
-
         .turn-indicator {
             background: #1f1912;
             border-radius: 40px;
@@ -68,32 +50,14 @@
             align-items: center;
             gap: 12px;
         }
-
-        .piece-sample {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .piece-black {
-            background: radial-gradient(circle at 35% 35%, #555, #1e1e1e);
-            box-shadow: inset -1px -1px 0 #2a2a2a, 0 2px 5px black;
-        }
-
-        .piece-white {
-            background: radial-gradient(circle at 35% 35%, #f9f9fc, #e1e5ec);
-            box-shadow: inset -1px -1px 0 #b0b0b0, 0 2px 5px rgba(0,0,0,0.2);
-        }
-
+        .piece-sample { width: 32px; height: 32px; border-radius: 50%; }
+        .piece-black { background: radial-gradient(circle at 35% 35%, #555, #1e1e1e); }
+        .piece-white { background: radial-gradient(circle at 35% 35%, #f9f9fc, #e1e5ec); }
         .turn-text {
             font-size: 1.4rem;
             font-weight: bold;
-            letter-spacing: 2px;
             color: #f7e9b0;
-            text-shadow: 0 2px 2px black;
         }
-
         .reset-btn {
             background: #ffcd7e;
             border: none;
@@ -103,31 +67,13 @@
             border-radius: 40px;
             cursor: pointer;
             color: #2c1c0c;
-            font-family: inherit;
-            transition: 0.1s linear;
-            box-shadow: 0 4px 0 #a05e1a;
-            transform: translateY(-2px);
         }
-
-        .reset-btn:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px 0 #a05e1a;
-        }
-
         .winner-message {
             font-size: 1rem;
             background: #000000aa;
-            backdrop-filter: blur(8px);
             padding: 6px 16px;
             border-radius: 40px;
             color: #ffeaac;
-            font-weight: bold;
-        }
-
-        @media (max-width: 600px) {
-            .turn-text { font-size: 1.1rem; }
-            .reset-btn { padding: 6px 18px; font-size: 1rem; }
-            .piece-sample { width: 26px; height: 26px; }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -150,355 +96,338 @@
 </div>
 
 <script>
-    // ==================== 已填入您的 Supabase 钥匙 ====================
-    const SUPABASE_URL = 'https://ekpjimjgcujpmyldxqrj.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcGppbWpnY3VqcG15bGR4cXJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0OTExNDYsImV4cCI6MjA5MjA2NzE0Nn0.7AF5yOB5f9RRCF8pIWOwgUQWxXhDFe9u8VfSz0pV2_I';
-    // =========================================================================
+    (function() {
+        const SUPABASE_URL = 'https://ekpjimjgcujpmyldxqrj.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcGppbWpnY3VqcG15bGR4cXJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0OTExNDYsImV4cCI6MjA5MjA2NzE0Nn0.7AF5yOB5f9RRCF8pIWOwgUQWxXhDFe9u8VfSz0pV2_I';
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const boardSize = 15;
-    let board = [];
-    let currentPlayer = 1;
-    let gameOver = false;
-    let roomId = null;
-    let myColor = null;
+        const boardSize = 15;
+        let board = [];
+        let currentPlayer = 1;
+        let gameOver = false;
+        let roomId = null;
+        let myColor = null;
 
-    const canvas = document.getElementById('gobangCanvas');
-    const ctx = canvas.getContext('2d');
-    const turnTextEl = document.getElementById('turnText');
-    const turnPieceIcon = document.getElementById('turnPieceIcon');
-    const winnerMsgEl = document.getElementById('winnerMsg');
-    const resetBtn = document.getElementById('resetBtn');
+        const canvas = document.getElementById('gobangCanvas');
+        const ctx = canvas.getContext('2d');
+        const turnTextEl = document.getElementById('turnText');
+        const turnPieceIcon = document.getElementById('turnPieceIcon');
+        const winnerMsgEl = document.getElementById('winnerMsg');
+        const resetBtn = document.getElementById('resetBtn');
 
-    let cellSize = 0, offsetX = 0, offsetY = 0, radius = 0;
+        let cellSize = 0, offsetX = 0, offsetY = 0, radius = 0;
 
-    // 加入或创建房间
-    async function joinRoom() {
-        let inputRoom = prompt("请输入房间号（例如 123）:", "123");
-        if (!inputRoom) return;
-        roomId = inputRoom;
+        async function joinRoom() {
+            let inputRoom = prompt("请输入房间号（例如 123）:", "123");
+            if (!inputRoom) return;
+            roomId = inputRoom;
 
-        let { data: game, error } = await supabase
-            .from('games')
-            .select('*')
-            .eq('id', roomId)
-            .maybeSingle();
+            try {
+                let { data: game, error } = await supabaseClient
+                    .from('games')
+                    .select('*')
+                    .eq('id', roomId)
+                    .maybeSingle();
 
-        if (error) {
-            console.error("查询错误:", error);
-            alert("连接失败，请刷新重试");
-            return;
-        }
+                if (error) {
+                    alert("连接失败: " + error.message);
+                    turnTextEl.innerText = "连接失败";
+                    return;
+                }
 
-        if (!game) {
-            myColor = 1;
-            const emptyBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
-            const { error: insertError } = await supabase
-                .from('games')
-                .insert([{
-                    id: roomId,
-                    board_data: emptyBoard,
-                    current_player: 1,
-                    winner: null,
-                    status: 'playing'
-                }]);
-            if (insertError) {
-                alert("创建房间失败: " + insertError.message);
-                return;
+                if (!game) {
+                    myColor = 1;
+                    const emptyBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
+                    const { error: insertError } = await supabaseClient
+                        .from('games')
+                        .insert([{
+                            id: roomId,
+                            board_data: emptyBoard,
+                            current_player: 1,
+                            winner: null,
+                            status: 'playing'
+                        }]);
+                    if (insertError) {
+                        alert("创建房间失败: " + insertError.message);
+                        return;
+                    }
+                    initLocalBoard(emptyBoard);
+                    currentPlayer = 1;
+                    gameOver = false;
+                    alert(`房间 ${roomId} 创建成功！你是黑棋，请先走。`);
+                } else {
+                    myColor = 2;
+                    initLocalBoard(game.board_data);
+                    currentPlayer = game.current_player;
+                    gameOver = (game.winner !== null);
+                    if (gameOver) {
+                        winnerMsgEl.innerText = `${game.winner === 'black' ? '黑棋' : '白棋'} 已获胜`;
+                    }
+                    alert(`加入房间 ${roomId} 成功！你是白棋，等待对手落子。`);
+                }
+
+                updateTurnDisplay();
+                drawBoard();
+                listenToGameChanges();
+            } catch (err) {
+                alert("发生错误: " + err.message);
             }
-            initLocalBoard(emptyBoard);
-            currentPlayer = 1;
-            gameOver = false;
-            winnerMsgEl.innerText = '';
-            alert(`房间 ${roomId} 创建成功！你是黑棋，请先走。`);
-        } else {
-            myColor = 2;
-            initLocalBoard(game.board_data);
-            currentPlayer = game.current_player;
-            gameOver = (game.winner !== null);
-            if (gameOver) {
-                winnerMsgEl.innerText = `${game.winner === 'black' ? '黑棋' : '白棋'} 已获胜`;
+        }
+
+        function initLocalBoard(data) {
+            if (data && data.length === boardSize) {
+                board = data;
+            } else {
+                board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
             }
-            alert(`加入房间 ${roomId} 成功！你是白棋，等待对手落子。`);
         }
 
-        updateTurnDisplay();
-        drawBoard();
-        listenToGameChanges();
-    }
-
-    function initLocalBoard(data) {
-        if (data && data.length === boardSize) {
-            board = data;
-        } else {
-            board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
-        }
-    }
-
-    // 监听对手走棋
-    function listenToGameChanges() {
-        supabase
-            .channel(`game:${roomId}`)
-            .on(
-                'postgres_changes',
-                {
+        function listenToGameChanges() {
+            supabaseClient
+                .channel(`game:${roomId}`)
+                .on('postgres_changes', {
                     event: 'UPDATE',
                     schema: 'public',
                     table: 'games',
                     filter: `id=eq.${roomId}`
-                },
-                (payload) => {
+                }, (payload) => {
                     const newGame = payload.new;
                     initLocalBoard(newGame.board_data);
                     currentPlayer = newGame.current_player;
                     gameOver = (newGame.winner !== null);
-                    if (gameOver) {
-                        winnerMsgEl.innerText = `${newGame.winner === 'black' ? '黑棋' : '白棋'} 获胜！`;
-                    } else {
-                        winnerMsgEl.innerText = '';
-                    }
+                    winnerMsgEl.innerText = gameOver ? `${newGame.winner === 'black' ? '黑棋' : '白棋'} 获胜！` : '';
                     updateTurnDisplay();
                     drawBoard();
+                })
+                .subscribe();
+        }
+
+        async function placePiece(row, col) {
+            if (gameOver) {
+                alert("游戏已经结束");
+                return false;
+            }
+            if (board[row][col] !== 0) {
+                alert("这里已经有棋子了");
+                return false;
+            }
+            if (currentPlayer !== myColor) {
+                alert("请等待对手落子");
+                return false;
+            }
+
+            board[row][col] = myColor;
+
+            let win = checkWin(row, col, myColor);
+            let winnerVal = null;
+            if (win) {
+                gameOver = true;
+                winnerVal = (myColor === 1) ? 'black' : 'white';
+                winnerMsgEl.innerText = `${winnerVal === 'black' ? '黑棋' : '白棋'} 获胜！`;
+            } else {
+                currentPlayer = (currentPlayer === 1) ? 2 : 1;
+            }
+
+            updateTurnDisplay();
+            drawBoard();
+
+            const { error } = await supabaseClient
+                .from('games')
+                .update({
+                    board_data: board,
+                    current_player: currentPlayer,
+                    winner: winnerVal
+                })
+                .eq('id', roomId);
+
+            if (error) {
+                alert("同步失败，请重试");
+                return false;
+            }
+            return true;
+        }
+
+        function checkWin(row, col, playerVal) {
+            const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+            for(let [dx, dy] of dirs) {
+                let count = 1;
+                for(let step = 1; step <= 4; step++) {
+                    const nr = row + dx * step, nc = col + dy * step;
+                    if(nr < 0 || nr >= boardSize || nc < 0 || nc >= boardSize) break;
+                    if(board[nr][nc] === playerVal) count++;
+                    else break;
                 }
-            )
-            .subscribe();
-    }
-
-    // 落子并同步
-    async function placePiece(row, col) {
-        if (gameOver) {
-            alert("游戏已经结束，请点击「新的一局」");
-            return false;
-        }
-        if (board[row][col] !== 0) {
-            alert("这里已经有棋子了");
-            return false;
-        }
-        if (currentPlayer !== myColor) {
-            alert("请等待对手落子");
-            return false;
-        }
-
-        board[row][col] = myColor;
-
-        let win = checkWin(row, col, myColor);
-        let winnerVal = null;
-        if (win) {
-            gameOver = true;
-            winnerVal = (myColor === 1) ? 'black' : 'white';
-            winnerMsgEl.innerText = `${winnerVal === 'black' ? '黑棋' : '白棋'} 获胜！`;
-        } else {
-            currentPlayer = (currentPlayer === 1) ? 2 : 1;
-        }
-
-        updateTurnDisplay();
-        drawBoard();
-
-        const { error } = await supabase
-            .from('games')
-            .update({
-                board_data: board,
-                current_player: currentPlayer,
-                winner: winnerVal
-            })
-            .eq('id', roomId);
-
-        if (error) {
-            console.error("同步失败:", error);
-            alert("网络错误，请重试");
-            return false;
-        }
-        return true;
-    }
-
-    // 胜利检查
-    function checkWin(row, col, playerVal) {
-        const dirs = [[1,0],[0,1],[1,1],[1,-1]];
-        for(let [dx, dy] of dirs) {
-            let count = 1;
-            for(let step = 1; step <= 4; step++) {
-                const nr = row + dx * step, nc = col + dy * step;
-                if(nr < 0 || nr >= boardSize || nc < 0 || nc >= boardSize) break;
-                if(board[nr][nc] === playerVal) count++;
-                else break;
-            }
-            for(let step = 1; step <= 4; step++) {
-                const nr = row - dx * step, nc = col - dy * step;
-                if(nr < 0 || nr >= boardSize || nc < 0 || nc >= boardSize) break;
-                if(board[nr][nc] === playerVal) count++;
-                else break;
-            }
-            if(count >= 5) return true;
-        }
-        return false;
-    }
-
-    // 重置游戏
-    async function resetGame() {
-        if (!roomId) {
-            joinRoom();
-            return;
-        }
-        const emptyBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
-        board = emptyBoard;
-        currentPlayer = 1;
-        gameOver = false;
-        winnerMsgEl.innerText = '';
-        updateTurnDisplay();
-        drawBoard();
-        await supabase
-            .from('games')
-            .update({
-                board_data: emptyBoard,
-                current_player: 1,
-                winner: null
-            })
-            .eq('id', roomId);
-        alert("棋盘已重置，黑棋先走");
-    }
-
-    // 绘制棋盘
-    function drawBoard() {
-        if (!ctx) return;
-        const w = canvas.width, h = canvas.height;
-        const padding = 28;
-        cellSize = (w - padding * 2) / (boardSize - 1);
-        offsetX = padding;
-        offsetY = padding;
-        radius = Math.min(cellSize * 0.42, 16);
-
-        ctx.fillStyle = '#f7efcf';
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.beginPath();
-        ctx.strokeStyle = '#4b3a2b';
-        ctx.lineWidth = 1.8;
-        for(let i = 0; i < boardSize; i++) {
-            ctx.beginPath();
-            ctx.moveTo(offsetX, offsetY + i * cellSize);
-            ctx.lineTo(offsetX + (boardSize-1) * cellSize, offsetY + i * cellSize);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(offsetX + i * cellSize, offsetY);
-            ctx.lineTo(offsetX + i * cellSize, offsetY + (boardSize-1) * cellSize);
-            ctx.stroke();
-        }
-
-        const starPoints = [[3,3],[11,3],[7,7],[3,11],[11,11]];
-        for(let [x,y] of starPoints) {
-            const cx = offsetX + x * cellSize;
-            const cy = offsetY + y * cellSize;
-            ctx.beginPath();
-            ctx.arc(cx, cy, cellSize*0.12, 0, 2*Math.PI);
-            ctx.fillStyle = '#b45f2b';
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(cx, cy, cellSize*0.07, 0, 2*Math.PI);
-            ctx.fillStyle = '#e9bc7d';
-            ctx.fill();
-        }
-
-        for(let i = 0; i < boardSize; i++) {
-            for(let j = 0; j < boardSize; j++) {
-                const val = board[i][j];
-                if(val === 0) continue;
-                const cx = offsetX + j * cellSize;
-                const cy = offsetY + i * cellSize;
-                ctx.shadowColor = "rgba(0,0,0,0.4)";
-                ctx.shadowBlur = 3;
-                const grad = ctx.createRadialGradient(cx-3, cy-3, 3, cx, cy, radius);
-                if(val === 1) {
-                    grad.addColorStop(0, '#2b2b2b');
-                    grad.addColorStop(0.7, '#111111');
-                    ctx.fillStyle = grad;
-                } else {
-                    grad.addColorStop(0, '#fefefe');
-                    grad.addColorStop(0.6, '#e8eef5');
-                    ctx.fillStyle = grad;
+                for(let step = 1; step <= 4; step++) {
+                    const nr = row - dx * step, nc = col - dy * step;
+                    if(nr < 0 || nr >= boardSize || nc < 0 || nc >= boardSize) break;
+                    if(board[nr][nc] === playerVal) count++;
+                    else break;
                 }
+                if(count >= 5) return true;
+            }
+            return false;
+        }
+
+        async function resetGame() {
+            if (!roomId) {
+                joinRoom();
+                return;
+            }
+            const emptyBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
+            board = emptyBoard;
+            currentPlayer = 1;
+            gameOver = false;
+            winnerMsgEl.innerText = '';
+            updateTurnDisplay();
+            drawBoard();
+            await supabaseClient
+                .from('games')
+                .update({
+                    board_data: emptyBoard,
+                    current_player: 1,
+                    winner: null
+                })
+                .eq('id', roomId);
+            alert("棋盘已重置");
+        }
+
+        function drawBoard() {
+            if (!ctx) return;
+            const w = canvas.width, h = canvas.height;
+            const padding = 28;
+            cellSize = (w - padding * 2) / (boardSize - 1);
+            offsetX = padding;
+            offsetY = padding;
+            radius = Math.min(cellSize * 0.42, 16);
+
+            ctx.fillStyle = '#f7efcf';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#4b3a2b';
+            ctx.lineWidth = 1.8;
+            for(let i = 0; i < boardSize; i++) {
                 ctx.beginPath();
-                ctx.arc(cx, cy, radius, 0, Math.PI*2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
+                ctx.moveTo(offsetX, offsetY + i * cellSize);
+                ctx.lineTo(offsetX + (boardSize-1) * cellSize, offsetY + i * cellSize);
+                ctx.stroke();
                 ctx.beginPath();
-                ctx.arc(cx-2, cy-2, radius*0.22, 0, 2*Math.PI);
-                ctx.fillStyle = val === 1 ? 'rgba(180,180,200,0.3)' : 'rgba(255,255,255,0.85)';
+                ctx.moveTo(offsetX + i * cellSize, offsetY);
+                ctx.lineTo(offsetX + i * cellSize, offsetY + (boardSize-1) * cellSize);
+                ctx.stroke();
+            }
+
+            const starPoints = [[3,3],[11,3],[7,7],[3,11],[11,11]];
+            for(let [x,y] of starPoints) {
+                const cx = offsetX + x * cellSize;
+                const cy = offsetY + y * cellSize;
+                ctx.beginPath();
+                ctx.arc(cx, cy, cellSize*0.12, 0, 2*Math.PI);
+                ctx.fillStyle = '#b45f2b';
                 ctx.fill();
-                ctx.shadowColor = "transparent";
+                ctx.beginPath();
+                ctx.arc(cx, cy, cellSize*0.07, 0, 2*Math.PI);
+                ctx.fillStyle = '#e9bc7d';
+                ctx.fill();
+            }
+
+            for(let i = 0; i < boardSize; i++) {
+                for(let j = 0; j < boardSize; j++) {
+                    const val = board[i][j];
+                    if(val === 0) continue;
+                    const cx = offsetX + j * cellSize;
+                    const cy = offsetY + i * cellSize;
+                    ctx.shadowColor = "rgba(0,0,0,0.4)";
+                    ctx.shadowBlur = 3;
+                    const grad = ctx.createRadialGradient(cx-3, cy-3, 3, cx, cy, radius);
+                    if(val === 1) {
+                        grad.addColorStop(0, '#2b2b2b');
+                        grad.addColorStop(0.7, '#111111');
+                        ctx.fillStyle = grad;
+                    } else {
+                        grad.addColorStop(0, '#fefefe');
+                        grad.addColorStop(0.6, '#e8eef5');
+                        ctx.fillStyle = grad;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, radius, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.beginPath();
+                    ctx.arc(cx-2, cy-2, radius*0.22, 0, 2*Math.PI);
+                    ctx.fillStyle = val === 1 ? 'rgba(180,180,200,0.3)' : 'rgba(255,255,255,0.85)';
+                    ctx.fill();
+                    ctx.shadowColor = "transparent";
+                }
             }
         }
-    }
 
-    // 坐标转换
-    function getBoardIndexFromPixels(clientX, clientY) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const canvasX = (clientX - rect.left) * scaleX;
-        const canvasY = (clientY - rect.top) * scaleY;
-        if(canvasX < offsetX - radius || canvasX > offsetX + (boardSize-1)*cellSize + radius ||
-           canvasY < offsetY - radius || canvasY > offsetY + (boardSize-1)*cellSize + radius) {
+        function getBoardIndexFromPixels(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const canvasX = (clientX - rect.left) * scaleX;
+            const canvasY = (clientY - rect.top) * scaleY;
+            if(canvasX < offsetX - radius || canvasX > offsetX + (boardSize-1)*cellSize + radius ||
+               canvasY < offsetY - radius || canvasY > offsetY + (boardSize-1)*cellSize + radius) {
+                return null;
+            }
+            let minDist = cellSize * 0.4;
+            let targetRow = -1, targetCol = -1;
+            for(let i = 0; i < boardSize; i++) {
+                for(let j = 0; j < boardSize; j++) {
+                    const cx = offsetX + j * cellSize;
+                    const cy = offsetY + i * cellSize;
+                    const dist = Math.hypot(canvasX - cx, canvasY - cy);
+                    if(dist < minDist) {
+                        minDist = dist;
+                        targetRow = i;
+                        targetCol = j;
+                    }
+                }
+            }
+            if(targetRow !== -1 && targetCol !== -1 && minDist <= cellSize * 0.45) {
+                return { row: targetRow, col: targetCol };
+            }
             return null;
         }
-        let minDist = cellSize * 0.4;
-        let targetRow = -1, targetCol = -1;
-        for(let i = 0; i < boardSize; i++) {
-            for(let j = 0; j < boardSize; j++) {
-                const cx = offsetX + j * cellSize;
-                const cy = offsetY + i * cellSize;
-                const dist = Math.hypot(canvasX - cx, canvasY - cy);
-                if(dist < minDist) {
-                    minDist = dist;
-                    targetRow = i;
-                    targetCol = j;
-                }
-            }
-        }
-        if(targetRow !== -1 && targetCol !== -1 && minDist <= cellSize * 0.45) {
-            return { row: targetRow, col: targetCol };
-        }
-        return null;
-    }
 
-    function onCanvasClick(e) {
-        if(gameOver) return;
-        const pos = getBoardIndexFromPixels(e.clientX, e.clientY);
-        if(pos) placePiece(pos.row, pos.col);
-    }
-
-    function onCanvasTouch(e) {
-        e.preventDefault();
-        if(gameOver) return;
-        const touch = e.touches[0];
-        if(touch) {
-            const pos = getBoardIndexFromPixels(touch.clientX, touch.clientY);
+        function onCanvasClick(e) {
+            if(gameOver) return;
+            const pos = getBoardIndexFromPixels(e.clientX, e.clientY);
             if(pos) placePiece(pos.row, pos.col);
         }
-    }
 
-    function updateTurnDisplay() {
-        if (gameOver) return;
-        if (myColor === null) {
-            turnTextEl.innerText = "连接中...";
-            return;
+        function onCanvasTouch(e) {
+            e.preventDefault();
+            if(gameOver) return;
+            const touch = e.touches[0];
+            if(touch) {
+                const pos = getBoardIndexFromPixels(touch.clientX, touch.clientY);
+                if(pos) placePiece(pos.row, pos.col);
+            }
         }
-        if (currentPlayer === myColor) {
-            turnTextEl.innerText = (myColor === 1) ? '⚫ 你的回合 (黑棋)' : '⚪ 你的回合 (白棋)';
-            turnPieceIcon.className = `piece-sample ${myColor === 1 ? 'piece-black' : 'piece-white'}`;
-        } else {
-            turnTextEl.innerText = '⏳ 等待对手落子...';
-        }
-    }
 
-    function init() {
+        function updateTurnDisplay() {
+            if (gameOver) return;
+            if (myColor === null) {
+                turnTextEl.innerText = "连接中...";
+                return;
+            }
+            if (currentPlayer === myColor) {
+                turnTextEl.innerText = (myColor === 1) ? '你的回合 (黑棋)' : '你的回合 (白棋)';
+                turnPieceIcon.className = `piece-sample ${myColor === 1 ? 'piece-black' : 'piece-white'}`;
+            } else {
+                turnTextEl.innerText = '等待对手落子...';
+            }
+        }
+
         canvas.addEventListener('click', onCanvasClick);
         canvas.addEventListener('touchstart', onCanvasTouch, { passive: false });
         resetBtn.addEventListener('click', resetGame);
         joinRoom();
-    }
-
-    init();
+    })();
 </script>
 </body>
 </html>
