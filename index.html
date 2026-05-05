@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>五子棋</title>
+    <title>五子棋 · JSONBin联机版</title>
     <style>
         * { user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         body { background: linear-gradient(145deg, #1a4d2a 0%, #0e2a1a 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 12px; }
@@ -22,8 +22,6 @@
         .fun-bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 16px; }
         .fun-btn { background: #3a2a1c; border: none; color: #ffecb3; font-size: 0.75rem; padding: 6px 12px; border-radius: 40px; cursor: pointer; }
         .room-info { background: #1f1912aa; border-radius: 20px; padding: 6px 12px; margin-top: 10px; font-size: 0.7rem; color: #ffecb3; text-align: center; word-break: break-all; }
-        .debug-log { background: #000000aa; border-radius: 12px; padding: 8px; margin-top: 12px; font-size: 0.65rem; color: #88ff88; font-family: monospace; max-height: 120px; overflow-y: auto; }
-        .error-log { color: #ff8888; }
         .start-btn { background: #5a3a2a; font-size: 0.9rem; padding: 10px 20px; display: block; width: 90%; margin: 5px auto; }
     </style>
 </head>
@@ -54,7 +52,6 @@
         </div>
         
         <div class="room-info" id="roomInfo">⚡ 点击下方按钮开始</div>
-        <div class="debug-log" id="debugLog">📋 调试日志<br></div>
     </div>
 </div>
 
@@ -63,54 +60,31 @@
         // ========== 你的 API 密钥 ==========
         const JSONBIN_API_KEY = '$2a$10$rwXAaM.JCg0ZlUMzkSoDouQyP0WjbtYK3TGVP43oqtnqzesY3DIIS';
         
-        function addLog(msg, isError = false) {
-            const logDiv = document.getElementById('debugLog');
-            const time = new Date().toLocaleTimeString();
-            const colorClass = isError ? 'error-log' : '';
-            logDiv.innerHTML += `<div class="${colorClass}">[${time}] ${msg}</div>`;
-            logDiv.scrollTop = logDiv.scrollHeight;
-            console.log(msg);
-        }
+        const boardSize = 15;
+        let board = [];
+        let currentPlayer = 1;
+        let gameOver = false;
+        let myColor = null;
+        let binId = null;
+        let pollingInterval = null;
         
-        // 测试 API 密钥是否有效
-        async function testAPIKey() {
-            addLog("🔍 正在测试 API 密钥...");
-            try {
-                const response = await fetch('https://api.jsonbin.io/v3/b', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_API_KEY
-                    },
-                    body: JSON.stringify({ test: "hello", type: "test" })
-                });
-                
-                const data = await response.json();
-                addLog(`📡 响应状态: ${response.status}`);
-                
-                if (response.ok && data.metadata && data.metadata.id) {
-                    addLog(`✅ API 密钥有效！测试创建成功，ID: ${data.metadata.id.substring(0, 20)}...`);
-                    // 删除测试用的 bin
-                    await fetch(`https://api.jsonbin.io/v3/b/${data.metadata.id}`, {
-                        method: 'DELETE',
-                        headers: { 'X-Master-Key': JSONBIN_API_KEY }
-                    });
-                    addLog(`🗑️ 已删除测试 bin`);
-                    return true;
-                } else {
-                    addLog(`❌ API 密钥无效！响应: ${JSON.stringify(data)}`, true);
-                    return false;
-                }
-            } catch (e) {
-                addLog(`❌ 网络错误: ${e.message}`, true);
-                return false;
-            }
-        }
+        // 趣味开关
+        let rainbowMode = false, ghostMode = false, bigHeadMode = false, reverseMode = false, darkMode = false;
+        let shakeEnabled = false, voiceEnabled = false;
         
-        // 创建房间
+        const canvas = document.getElementById('gobangCanvas');
+        const ctx = canvas.getContext('2d');
+        const turnTextEl = document.getElementById('turnText');
+        const turnPieceIcon = document.getElementById('turnPieceIcon');
+        const winnerMsgEl = document.getElementById('winnerMsg');
+        const resetBtn = document.getElementById('resetBtn');
+        const roomInfoEl = document.getElementById('roomInfo');
+        
+        let cellSize = 0, offsetX = 0, offsetY = 0, radius = 0;
+        
+        // ========== JSONBin 核心函数 ==========
         async function createGame(roomName) {
-            addLog(`🏗️ 创建房间: ${roomName}`);
-            const emptyBoard = Array(15).fill().map(() => Array(15).fill(0));
+            const emptyBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
             const gameData = {
                 room_name: roomName,
                 board_data: emptyBoard,
@@ -119,104 +93,295 @@
                 created_at: new Date().toISOString()
             };
             
-            try {
-                const response = await fetch('https://api.jsonbin.io/v3/b', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_API_KEY,
-                        'X-Bin-Private': 'false'
-                    },
-                    body: JSON.stringify(gameData)
-                });
-                
-                const data = await response.json();
-                addLog(`📡 创建响应状态: ${response.status}`);
-                
-                if (response.ok && data.metadata && data.metadata.id) {
-                    addLog(`✅ 房间创建成功！Bin ID: ${data.metadata.id}`);
-                    return data.metadata.id;
-                } else {
-                    addLog(`❌ 创建失败: ${JSON.stringify(data)}`, true);
-                    return null;
+            const response = await fetch('https://api.jsonbin.io/v3/b', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_API_KEY,
+                    'X-Bin-Private': 'false'
+                },
+                body: JSON.stringify(gameData)
+            });
+            const data = await response.json();
+            return data.metadata ? data.metadata.id : null;
+        }
+        
+        async function getGameData(binIdInput) {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${binIdInput}/latest`, {
+                method: 'GET',
+                headers: { 'X-Master-Key': JSONBIN_API_KEY }
+            });
+            const data = await response.json();
+            return data.record;
+        }
+        
+        async function updateGameData(binIdInput, gameData) {
+            await fetch(`https://api.jsonbin.io/v3/b/${binIdInput}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_API_KEY
+                },
+                body: JSON.stringify(gameData)
+            });
+        }
+        
+        function startPolling(binIdInput) {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(async () => {
+                const gameRecord = await getGameData(binIdInput);
+                if (gameRecord && JSON.stringify(gameRecord.board_data) !== JSON.stringify(board)) {
+                    board = gameRecord.board_data;
+                    currentPlayer = gameRecord.current_player;
+                    gameOver = (gameRecord.winner !== null);
+                    if (gameOver && gameRecord.winner) {
+                        winnerMsgEl.innerText = `${gameRecord.winner === 'black' ? '黑棋' : '白棋'} 胜利！🎉`;
+                        if (voiceEnabled) speak(gameRecord.winner === 'black' ? '黑方胜利' : '白方胜利');
+                    }
+                    updateTurnDisplay();
+                    drawBoard();
                 }
-            } catch (e) {
-                addLog(`❌ 创建异常: ${e.message}`, true);
-                return null;
+            }, 800);
+        }
+        
+        // ========== 游戏逻辑 ==========
+        function checkWin(row, col, playerVal) {
+            const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+            for(let [dx, dy] of dirs) {
+                let count = 1;
+                for(let step=1;step<=4;step++) {
+                    const nr = row+dx*step, nc = col+dy*step;
+                    if(nr<0||nr>=boardSize||nc<0||nc>=boardSize) break;
+                    if(board[nr][nc]===playerVal) count++;
+                    else break;
+                }
+                for(let step=1;step<=4;step++) {
+                    const nr = row-dx*step, nc = col-dy*step;
+                    if(nr<0||nr>=boardSize||nc<0||nc>=boardSize) break;
+                    if(board[nr][nc]===playerVal) count++;
+                    else break;
+                }
+                if(count>=5) return true;
+            }
+            return false;
+        }
+        
+        async function placePiece(row, col) {
+            if (gameOver) { alert("游戏已结束"); return; }
+            if (board[row][col] !== 0) { alert("已有棋子"); return; }
+            if (currentPlayer !== myColor) { alert("等待对手落子"); return; }
+            
+            board[row][col] = myColor;
+            let win = checkWin(row, col, myColor);
+            let winnerVal = null;
+            
+            if (win) {
+                gameOver = true;
+                winnerVal = myColor === 1 ? 'black' : 'white';
+                winnerMsgEl.innerText = `${winnerVal === 'black' ? '黑棋' : '白棋'} 胜利！🎉`;
+                if (voiceEnabled) speak(winnerVal === 'black' ? '黑方胜利' : '白方胜利');
+                if (typeof canvasConfetti === 'function') canvasConfetti({ particleCount: 150, spread: 70 });
+            } else {
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+            }
+            
+            updateTurnDisplay();
+            drawBoard();
+            if (shakeEnabled && navigator.vibrate) navigator.vibrate(20);
+            
+            const gameData = await getGameData(binId);
+            if (gameData) {
+                gameData.board_data = board;
+                gameData.current_player = currentPlayer;
+                gameData.winner = winnerVal;
+                await updateGameData(binId, gameData);
             }
         }
         
-        // 开始联机
-        async function startOnline() {
-            addLog("🚀 开始联机流程...");
+        // ========== 绘制 ==========
+        function drawBoard() {
+            const w = canvas.width, h = canvas.height;
+            const padding = 28;
+            cellSize = (w - padding * 2) / (boardSize - 1);
+            offsetX = padding;
+            offsetY = padding;
+            radius = Math.min(cellSize * 0.42, 16);
             
-            // 先测试 API 密钥
-            const isValid = await testAPIKey();
-            if (!isValid) {
-                addLog("⚠️ API 密钥测试失败，请检查密钥是否正确", true);
-                alert("API 密钥无效！请检查你的 X-Master-Key 是否正确复制。\n\n注意：需要完整复制，不要有多余空格。");
-                return;
+            ctx.fillStyle = darkMode ? '#1a2a1f' : '#f7efcf';
+            ctx.fillRect(0, 0, w, h);
+            
+            ctx.strokeStyle = darkMode ? '#bbaa88' : '#4b3a2b';
+            ctx.lineWidth = 1.8;
+            for(let i = 0; i < boardSize; i++) {
+                ctx.beginPath();
+                ctx.moveTo(offsetX, offsetY + i * cellSize);
+                ctx.lineTo(offsetX + (boardSize-1) * cellSize, offsetY + i * cellSize);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(offsetX + i * cellSize, offsetY);
+                ctx.lineTo(offsetX + i * cellSize, offsetY + (boardSize-1) * cellSize);
+                ctx.stroke();
             }
             
-            let action = prompt("选择操作:\n1 - 创建新房间\n2 - 加入已有房间\n\n输入1或2", "1");
+            for(let i = 0; i < boardSize; i++) {
+                for(let j = 0; j < boardSize; j++) {
+                    if(board[i][j] === 0) continue;
+                    let x = offsetX + j * cellSize;
+                    let y = offsetY + i * cellSize;
+                    if (reverseMode) {
+                        x = offsetX + (boardSize-1 - j) * cellSize;
+                        y = offsetY + (boardSize-1 - i) * cellSize;
+                    }
+                    
+                    let grad;
+                    if (rainbowMode) {
+                        const hue = (Date.now() * 0.005) % 360;
+                        grad = ctx.createRadialGradient(x-3, y-3, 3, x, y, radius);
+                        grad.addColorStop(0, `hsl(${hue}, 100%, 65%)`);
+                        grad.addColorStop(1, `hsl(${hue+40}, 80%, 45%)`);
+                        ctx.fillStyle = grad;
+                    } else if (board[i][j] === 1) {
+                        grad = ctx.createRadialGradient(x-3, y-3, 3, x, y, radius);
+                        grad.addColorStop(0, '#3a3a3a');
+                        grad.addColorStop(1, '#111');
+                        ctx.fillStyle = grad;
+                    } else {
+                        grad = ctx.createRadialGradient(x-3, y-3, 3, x, y, radius);
+                        grad.addColorStop(0, '#fefefe');
+                        grad.addColorStop(1, '#cbd5e1');
+                        ctx.fillStyle = grad;
+                    }
+                    
+                    ctx.globalAlpha = ghostMode ? 0.65 : 1;
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    if (bigHeadMode) {
+                        ctx.beginPath();
+                        ctx.arc(x-2, y-2, radius*0.4, 0, 2*Math.PI);
+                        ctx.fillStyle = 'white';
+                        ctx.fill();
+                    }
+                    ctx.globalAlpha = 1;
+                }
+            }
+        }
+        
+        function updateTurnDisplay() {
+            if(gameOver) return;
+            if(myColor === null) turnTextEl.innerText = "未加入房间";
+            else if(currentPlayer === myColor) {
+                turnTextEl.innerText = myColor===1 ? '⚫ 你的回合(黑)' : '⚪ 你的回合(白)';
+                turnPieceIcon.className = `piece-sample ${myColor===1?'piece-black':'piece-white'}`;
+            } else {
+                turnTextEl.innerText = '⏳ 等待对手...';
+            }
+        }
+        
+        function speak(msg) {
+            if (!voiceEnabled) return;
+            const utterance = new SpeechSynthesisUtterance(msg);
+            utterance.lang = 'zh-CN';
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        // ========== 联机入口 ==========
+        async function startOnline() {
+            let action = prompt("选择:\n1 - 创建新房间\n2 - 加入已有房间", "1");
             
             if (action === "1") {
-                let newRoomName = prompt("请输入房间名称:", "我的五子棋房间");
+                let newRoomName = prompt("房间名称:", "五子棋");
                 if (!newRoomName) return;
                 
                 const newBinId = await createGame(newRoomName);
                 if (newBinId) {
-                    alert(`✨ 房间创建成功！\n\n房间ID: ${newBinId}\n\n请把这个ID复制给你的朋友！`);
-                    document.getElementById('roomInfo').innerHTML = `🏠 房间: ${newRoomName}<br>🔑 房间ID: ${newBinId}<br>⚫ 你是黑棋(先手)`;
+                    binId = newBinId;
+                    myColor = 1;
+                    board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
+                    currentPlayer = 1;
+                    gameOver = false;
+                    roomInfoEl.innerHTML = `🏠 房间: ${newRoomName}<br>🔑 房间ID: ${newBinId}<br>⚫ 你是黑棋(先手)<br>📤 把房间ID发给朋友！`;
+                    alert(`✅ 房间创建成功！\n\n房间ID: ${newBinId}\n\n请把这个ID发给朋友，让他选择"加入已有房间"`);
+                    updateTurnDisplay();
+                    drawBoard();
+                    startPolling(binId);
                 } else {
-                    alert("创建房间失败，请查看调试日志");
+                    alert("创建失败，请重试");
                 }
             } 
             else if (action === "2") {
                 let inputBinId = prompt("请输入房间ID:");
                 if (!inputBinId) return;
-                alert(`尝试加入房间: ${inputBinId}\n请查看调试日志`);
-                addLog(`📝 尝试加入房间: ${inputBinId}`);
+                
+                const gameData = await getGameData(inputBinId);
+                if (gameData) {
+                    binId = inputBinId;
+                    myColor = 2;
+                    board = gameData.board_data;
+                    currentPlayer = gameData.current_player;
+                    gameOver = (gameData.winner !== null);
+                    roomInfoEl.innerHTML = `🏠 房间: ${gameData.room_name}<br>🔑 房间ID: ${inputBinId}<br>⚪ 你是白棋(后手)`;
+                    if (gameData.winner) winnerMsgEl.innerText = `${gameData.winner} 已获胜`;
+                    alert(`✅ 加入成功！你是白棋，等待黑棋落子`);
+                    updateTurnDisplay();
+                    drawBoard();
+                    startPolling(binId);
+                } else {
+                    alert("加入失败，房间ID无效");
+                }
             }
         }
         
-        // 页面加载时自动测试
-        window.onload = () => {
-            addLog("🎮 五子棋联机版加载完成");
-            addLog(`🔑 API密钥前20位: ${JSONBIN_API_KEY.substring(0, 20)}...`);
-            testAPIKey();
-        };
+        // 坐标转换
+        function getBoardIndexFromPixels(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let canvasX = (clientX - rect.left) * scaleX;
+            let canvasY = (clientY - rect.top) * scaleY;
+            
+            if(canvasX < offsetX - radius || canvasX > offsetX + (boardSize-1)*cellSize + radius) return null;
+            let minDist = cellSize*0.4, targetRow=-1, targetCol=-1;
+            for(let i=0;i<boardSize;i++){
+                for(let j=0;j<boardSize;j++){
+                    const cx = offsetX + j*cellSize, cy = offsetY + i*cellSize;
+                    const dist = Math.hypot(canvasX-cx, canvasY-cy);
+                    if(dist<minDist){ minDist=dist; targetRow=i; targetCol=j; }
+                }
+            }
+            return targetRow !== -1 ? { row: targetRow, col: targetCol } : null;
+        }
         
-        // 绑定开始按钮
+        function onCanvasClick(e) {
+            if(gameOver || myColor === null) return;
+            const pos = getBoardIndexFromPixels(e.clientX, e.clientY);
+            if(pos) placePiece(pos.row, pos.col);
+        }
+        
+        canvas.addEventListener('click', onCanvasClick);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onCanvasClick(e.touches[0]); });
+        resetBtn.addEventListener('click', () => location.reload());
+        
+        // 按钮绑定
+        document.getElementById('shakeBtn').onclick = () => { shakeEnabled = !shakeEnabled; alert(shakeEnabled ? "震动开启" : "震动关闭"); };
+        document.getElementById('rainbowBtn').onclick = () => { rainbowMode = !rainbowMode; drawBoard(); };
+        document.getElementById('ghostBtn').onclick = () => { ghostMode = !ghostMode; drawBoard(); };
+        document.getElementById('bigHeadBtn').onclick = () => { bigHeadMode = !bigHeadMode; drawBoard(); };
+        document.getElementById('reverseBtn').onclick = () => { reverseMode = !reverseMode; drawBoard(); };
+        document.getElementById('confettiBtn').onclick = () => { if(window.canvasConfetti) canvasConfetti({ particleCount: 150, spread: 70 }); else { const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/canvas-confetti@1'; s.onload=()=>canvasConfetti({particleCount:150}); document.body.appendChild(s); } };
+        document.getElementById('darkBtn').onclick = () => { darkMode = !darkMode; drawBoard(); };
+        document.getElementById('echoBtn').onclick = () => { voiceEnabled = !voiceEnabled; alert(voiceEnabled ? "语音开启" : "语音关闭"); };
+        
+        // 开始按钮
         const startBtn = document.createElement('button');
         startBtn.innerText = '🎮 开始联机 / 加入房间';
         startBtn.className = 'fun-btn start-btn';
         startBtn.onclick = startOnline;
         document.querySelector('.game-container').insertBefore(startBtn, document.querySelector('.board-wrapper'));
         
-        // 其他功能按钮（简化版）
-        document.getElementById('shakeBtn')?.addEventListener('click', () => { if(navigator.vibrate) navigator.vibrate(50); });
-        document.getElementById('rainbowBtn')?.addEventListener('click', () => alert("彩虹模式已开启"));
-        document.getElementById('confettiBtn')?.addEventListener('click', () => alert("烟花特效"));
-        document.getElementById('darkBtn')?.addEventListener('click', () => alert("暗夜模式"));
-        document.getElementById('echoBtn')?.addEventListener('click', () => alert("语音功能"));
-        
-        // Canvas 基础绘制
-        const canvas = document.getElementById('gobangCanvas');
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#f7efcf';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#4b3a2b';
-        for(let i=0;i<15;i++){
-            ctx.beginPath();
-            ctx.moveTo(28, 28 + i * 37.4);
-            ctx.lineTo(552, 28 + i * 37.4);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(28 + i * 37.4, 28);
-            ctx.lineTo(28 + i * 37.4, 552);
-            ctx.stroke();
-        }
+        drawBoard();
     })();
 </script>
 </body>
