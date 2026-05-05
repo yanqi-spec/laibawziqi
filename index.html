@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>五子棋 · JSONBin联机版</title>
+    <title>五子棋 </title>
     <style>
         * { user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         body { background: linear-gradient(145deg, #1a4d2a 0%, #0e2a1a 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 12px; }
@@ -23,7 +23,9 @@
         .fun-btn { background: #3a2a1c; border: none; color: #ffecb3; font-size: 0.75rem; padding: 6px 12px; border-radius: 40px; cursor: pointer; }
         .room-info { background: #1f1912aa; border-radius: 20px; padding: 8px 12px; margin-top: 10px; font-size: 0.75rem; color: #ffecb3; text-align: center; word-break: break-all; }
         .start-btn { background: #5a3a2a; font-size: 0.9rem; padding: 10px 20px; display: block; width: 90%; margin: 5px auto; border: none; color: white; border-radius: 40px; cursor: pointer; }
-        .loading { opacity: 0.6; pointer-events: none; }
+        .copy-btn { background: #ffcd7e; border: none; color: #2c1c0c; padding: 5px 12px; border-radius: 20px; margin-left: 8px; cursor: pointer; font-size: 0.7rem; }
+        .status-ok { color: #aaffaa; }
+        .status-wait { color: #ffaa66; }
         .hidden { display: none; }
     </style>
 </head>
@@ -61,7 +63,7 @@
 
 <script>
     (function(){
-        // ========== 你的 API 密钥 ==========
+        // ========== API 密钥 ==========
         const JSONBIN_API_KEY = '$2a$10$rwXAaM.JCg0ZlUMzkSoDouQyP0WjbtYK3TGVP43oqtnqzesY3DIIS';
         
         // ========== 游戏状态 ==========
@@ -72,7 +74,6 @@
         let gameOver = false;
         let binId = null;
         let pollingInterval = null;
-        let isWaitingForOpponent = false;
         
         // 趣味开关
         let rainbowMode = false, ghostMode = false, bigHeadMode = false, reverseMode = false, darkMode = false;
@@ -89,6 +90,15 @@
         const startBtn = document.getElementById('startBtn');
         
         let cellSize = 0, offsetX = 0, offsetY = 0, radius = 0;
+        
+        // ========== 辅助函数 ==========
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert(`✅ 房间ID已复制：${text}\n\n发送给朋友即可联机！`);
+            }).catch(() => {
+                prompt("无法自动复制，请手动复制下面ID：", text);
+            });
+        }
         
         // ========== JSONBin 核心函数 ==========
         async function createGame(roomName) {
@@ -145,7 +155,7 @@
             });
         }
         
-        // 轮询监听（快速响应）
+        // 轮询监听
         function startPolling(binIdInput) {
             if (pollingInterval) clearInterval(pollingInterval);
             
@@ -156,12 +166,12 @@
                 if (!gameRecord || !gameRecord.board_data) return;
                 
                 // 检查数据是否有变化
-                const boardChanged = JSON.stringify(gameRecord.board_data) !== JSON.stringify(board);
-                const playerChanged = gameRecord.current_player !== currentPlayer;
-                const winnerChanged = gameRecord.winner !== (gameOver ? (winnerMsgEl.innerText.includes('黑') ? 'black' : 'white') : null);
+                const remoteBoardStr = JSON.stringify(gameRecord.board_data);
+                const localBoardStr = JSON.stringify(board);
                 
-                if (boardChanged || playerChanged || winnerChanged) {
-                    board = JSON.parse(JSON.stringify(gameRecord.board_data));
+                if (remoteBoardStr !== localBoardStr) {
+                    console.log("检测到远程数据变化，同步中...");
+                    board = JSON.parse(remoteBoardStr);
                     currentPlayer = gameRecord.current_player;
                     gameOver = (gameRecord.winner !== null);
                     
@@ -176,7 +186,7 @@
                     updateTurnDisplay();
                     drawBoard();
                 }
-            }, 500);  // 500ms 轮询，响应更快
+            }, 500);
         }
         
         // ========== 游戏逻辑 ==========
@@ -204,35 +214,49 @@
         async function placePiece(row, col) {
             // 各种检查
             if (gameOver) {
-                alert("游戏已结束");
-                return;
+                alert("游戏已结束，请点击「新一局」");
+                return false;
             }
             if (!myColor) {
                 alert("请先加入房间");
-                return;
+                return false;
             }
             if (board[row][col] !== 0) {
                 alert("这里已经有棋子了");
-                return;
+                return false;
             }
             if (currentPlayer !== myColor) {
                 alert("请等待对手落子");
-                return;
+                return false;
             }
             
-            // 落子
-            board[row][col] = myColor;
+            console.log(`落子: row=${row}, col=${col}, myColor=${myColor}, currentPlayer=${currentPlayer}`);
+            
+            // 深拷贝当前棋盘
+            const newBoard = JSON.parse(JSON.stringify(board));
+            newBoard[row][col] = myColor;
+            
+            // 检查胜利
             const win = checkWin(row, col, myColor);
             let winnerVal = null;
+            let newCurrentPlayer = currentPlayer;
             
             if (win) {
-                gameOver = true;
                 winnerVal = myColor === 1 ? 'black' : 'white';
+                console.log("胜利！", winnerVal);
+            } else {
+                newCurrentPlayer = currentPlayer === 1 ? 2 : 1;
+            }
+            
+            // 先更新本地显示
+            board = newBoard;
+            currentPlayer = newCurrentPlayer;
+            gameOver = (winnerVal !== null);
+            
+            if (gameOver) {
                 winnerMsgEl.innerText = `${winnerVal === 'black' ? '黑棋' : '白棋'} 胜利！🎉`;
                 if (voiceEnabled) speak(winnerVal === 'black' ? '黑方胜利' : '白方胜利');
                 if (typeof canvasConfetti === 'function') canvasConfetti({ particleCount: 150, spread: 70 });
-            } else {
-                currentPlayer = currentPlayer === 1 ? 2 : 1;
             }
             
             updateTurnDisplay();
@@ -240,13 +264,22 @@
             if (shakeEnabled && navigator.vibrate) navigator.vibrate(20);
             
             // 同步到服务器
-            const gameData = await getGameData(binId);
-            if (gameData) {
-                gameData.board_data = board;
-                gameData.current_player = currentPlayer;
-                gameData.winner = winnerVal;
-                await updateGameData(binId, gameData);
+            try {
+                const gameData = await getGameData(binId);
+                if (gameData) {
+                    gameData.board_data = board;
+                    gameData.current_player = currentPlayer;
+                    gameData.winner = winnerVal;
+                    await updateGameData(binId, gameData);
+                    console.log("数据已同步到服务器");
+                } else {
+                    console.error("获取游戏数据失败");
+                }
+            } catch (e) {
+                console.error("同步失败:", e);
             }
+            
+            return true;
         }
         
         async function resetGame() {
@@ -263,7 +296,6 @@
                 gameData.winner = null;
                 await updateGameData(binId, gameData);
                 
-                // 本地也更新
                 board = emptyBoard;
                 currentPlayer = 1;
                 gameOver = false;
@@ -283,11 +315,9 @@
             offsetY = padding;
             radius = Math.min(cellSize * 0.42, 16);
             
-            // 背景
             ctx.fillStyle = darkMode ? '#1a2a1f' : '#f7efcf';
             ctx.fillRect(0, 0, w, h);
             
-            // 网格线
             ctx.strokeStyle = darkMode ? '#bbaa88' : '#4b3a2b';
             ctx.lineWidth = 1.8;
             for(let i = 0; i < boardSize; i++) {
@@ -301,7 +331,6 @@
                 ctx.stroke();
             }
             
-            // 星位
             const starPoints = [[3,3],[11,3],[7,7],[3,11],[11,11]];
             for(let [x,y] of starPoints) {
                 const cx = offsetX + x * cellSize;
@@ -312,7 +341,6 @@
                 ctx.fill();
             }
             
-            // 棋子
             for(let i = 0; i < boardSize; i++) {
                 for(let j = 0; j < boardSize; j++) {
                     if(board[i][j] === 0) continue;
@@ -429,19 +457,18 @@
             }
         }
         
-        // ========== 联机入口（修复版） ==========
+        // ========== 联机入口 ==========
         async function startOnline() {
-            // 隐藏开始按钮，防止重复点击
             startBtn.style.display = 'none';
             startBtn.innerText = '⏳ 连接中...';
             
             const action = prompt("选择操作:\n\n1 - 创建新房间（我是先手黑棋）\n2 - 加入已有房间（我是后手白棋）\n\n请输入 1 或 2", "1");
             
             if (action === "1") {
-                // 创建房间
                 const roomName = prompt("请输入房间名称（方便识别）:", "五子棋对战");
                 if (!roomName) {
                     startBtn.style.display = 'block';
+                    startBtn.innerText = '🎮 开始联机 / 加入房间';
                     return;
                 }
                 
@@ -450,14 +477,24 @@
                 const newBinId = await createGame(roomName);
                 if (newBinId) {
                     binId = newBinId;
-                    myColor = 1;  // 创建者是黑棋
+                    myColor = 1;
                     board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
                     currentPlayer = 1;
                     gameOver = false;
                     
-                    roomInfoEl.innerHTML = `✅ 房间创建成功！<br>🏠 房间名: ${roomName}<br>🔑 房间ID: <strong style="font-size:1rem">${newBinId}</strong><br>⚫ 你是黑棋（先手）<br><br>📤 请把上面的房间ID发给朋友！<br>让对方选择「加入已有房间」并输入这个ID`;
+                    // 自动复制房间ID
+                    copyToClipboard(newBinId);
                     
-                    alert(`✅ 房间创建成功！\n\n房间ID: ${newBinId}\n\n请把这个ID复制给你的朋友，让他选择「加入已有房间」并粘贴这个ID。\n\n你是黑棋，先下！`);
+                    roomInfoEl.innerHTML = `
+                        ✅ 房间创建成功！<br>
+                        🏠 房间名: ${roomName}<br>
+                        🔑 房间ID: <strong style="font-size:1rem">${newBinId}</strong><br>
+                        ⚫ 你是黑棋（先手）<br>
+                        <br>
+                        📤 房间ID已自动复制！<br>
+                        让对方选择「加入已有房间」并粘贴这个ID
+                        <button class="copy-btn" onclick="navigator.clipboard.writeText('${newBinId}')">📋 再次复制</button>
+                    `;
                     
                     updateTurnDisplay();
                     drawBoard();
@@ -467,13 +504,14 @@
                     roomInfoEl.innerHTML = "❌ 创建失败，请检查网络后刷新页面重试";
                     alert("创建失败，请刷新页面重试");
                     startBtn.style.display = 'block';
+                    startBtn.innerText = '🎮 开始联机 / 加入房间';
                 }
             } 
             else if (action === "2") {
-                // 加入房间
                 const inputBinId = prompt("请输入房间ID（创建者给你的那串字符）:");
                 if (!inputBinId) {
                     startBtn.style.display = 'block';
+                    startBtn.innerText = '🎮 开始联机 / 加入房间';
                     return;
                 }
                 
@@ -482,12 +520,18 @@
                 const gameData = await getGameData(inputBinId);
                 if (gameData && gameData.board_data) {
                     binId = inputBinId;
-                    myColor = 2;  // 加入者是白棋
+                    myColor = 2;
                     board = JSON.parse(JSON.stringify(gameData.board_data));
                     currentPlayer = gameData.current_player;
                     gameOver = (gameData.winner !== null);
                     
-                    roomInfoEl.innerHTML = `✅ 加入成功！<br>🏠 房间名: ${gameData.room_name}<br>⚪ 你是白棋（后手）<br><br>${gameData.winner ? '⚠️ 游戏已结束，点击「新一局」开始' : '等待黑棋落子...'}`;
+                    roomInfoEl.innerHTML = `
+                        ✅ 加入成功！<br>
+                        🏠 房间名: ${gameData.room_name}<br>
+                        ⚪ 你是白棋（后手）<br>
+                        <br>
+                        ${gameData.winner ? '⚠️ 游戏已结束，点击「新一局」开始' : '等待黑棋落子...'}
+                    `;
                     
                     if (gameData.winner) {
                         winnerMsgEl.innerText = `${gameData.winner === 'black' ? '黑棋' : '白棋'} 已获胜`;
@@ -503,11 +547,13 @@
                     roomInfoEl.innerHTML = `❌ 加入失败！<br>房间ID "${inputBinId}" 不存在或无效<br>请检查ID是否正确`;
                     alert("加入失败，请检查房间ID是否正确");
                     startBtn.style.display = 'block';
+                    startBtn.innerText = '🎮 开始联机 / 加入房间';
                 }
             }
             else {
                 alert("输入无效，请选择 1 或 2");
                 startBtn.style.display = 'block';
+                startBtn.innerText = '🎮 开始联机 / 加入房间';
             }
         }
         
@@ -548,7 +594,7 @@
         document.getElementById('darkBtn').onclick = () => { darkMode = !darkMode; drawBoard(); };
         document.getElementById('echoBtn').onclick = () => { voiceEnabled = !voiceEnabled; alert(voiceEnabled ? "语音播报开启 ✓" : "语音播报关闭"); };
         
-        // 初始化棋盘
+        // 初始化
         drawBoard();
     })();
 </script>
